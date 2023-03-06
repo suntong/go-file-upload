@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
-const maxUploadSize = 1024 * 1024 // 1MB
+const uploadPath = "./uploads"
+
+var maxUploadSize int64 = 1024 * 1024 // 1MB
 
 // Progress is used to track the progress of a file upload.
 // It implements the io.Writer interface so it can be passed
@@ -110,7 +113,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		f, err := os.Create(fmt.Sprintf("./uploads/%s_%d%s",
+		f, err := os.Create(fmt.Sprintf("%s/%s_%d%s", uploadPath,
 			fileHeader.Filename, //filepath.Base(fileHeader.Filename),
 			time.Now().Unix()/10000,
 			filepath.Ext(fileHeader.Filename)))
@@ -137,16 +140,23 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	err := os.MkdirAll("./uploads", os.ModePerm)
+	err := os.MkdirAll(uploadPath, os.ModePerm)
 	if err != nil {
 		log.Fatal("Error ", err)
+	}
+	maxUploadSizeStr := os.Getenv("MAX_UPLOAD_SIZE")
+	if maxUploadSizeStr != "" {
+		maxUploadSize, err = strconv.ParseInt(maxUploadSizeStr, 10, 64)
+		if err != nil {
+			log.Fatal("Error ", err)
+		}
 	}
 
 	httpPort := os.Getenv("PORT")
 	if httpPort == "" {
 		httpPort = "18899"
 	}
-	log.Println("severing on port", httpPort)
+	log.Println("severing on port", httpPort, "with max size of", maxUploadSize)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", webUIHandler)

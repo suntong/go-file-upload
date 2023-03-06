@@ -36,11 +36,11 @@ func (pr *Progress) Write(p []byte) (n int, err error) {
 // Print displays the current progress of the file upload
 func (pr *Progress) Print() {
 	if pr.BytesRead == pr.TotalSize {
-		fmt.Println("DONE!")
+		fmt.Println(" DONE!")
 		return
 	}
 
-	fmt.Printf("File upload in progress: %d\n", pr.BytesRead)
+	fmt.Printf(" %d", pr.BytesRead*100/pr.TotalSize)
 }
 
 // web ui Handler serves the html file
@@ -127,6 +127,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		pr := &Progress{
 			TotalSize: fileHeader.Size,
 		}
+		log.Printf("File '%s' upload in progress (%%):", fileHeader.Filename)
 
 		_, err = io.Copy(f, io.TeeReader(file, pr))
 		if err != nil {

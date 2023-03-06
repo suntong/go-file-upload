@@ -142,6 +142,12 @@ func main() {
 		log.Fatal("Error ", err)
 	}
 
+	httpPort := os.Getenv("PORT")
+	if httpPort == "" {
+		httpPort = "18899"
+	}
+	log.Println("severing on port", httpPort)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", webUIHandler)
 	mux.HandleFunc("/healthz", healthzHandler)

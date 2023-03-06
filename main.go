@@ -99,7 +99,10 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		f, err := os.Create(fmt.Sprintf("./uploads/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename)))
+		f, err := os.Create(fmt.Sprintf("./uploads/%s_%d%s",
+			fileHeader.Filename, //filepath.Base(fileHeader.Filename),
+			time.Now().Unix()/10000,
+			filepath.Ext(fileHeader.Filename)))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const MAX_UPLOAD_SIZE = 1024 * 1024 // 1MB
+const maxUploadSize = 1024 * 1024 // 1MB
 
 // Progress is used to track the progress of a file upload.
 // It implements the io.Writer interface so it can be passed
@@ -40,9 +40,25 @@ func (pr *Progress) Print() {
 	fmt.Printf("File upload in progress: %d\n", pr.BytesRead)
 }
 
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
+// web ui Handler serves the html file
+func webUIHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
 	http.ServeFile(w, r, "index.html")
+}
+
+// Healthz Handler for use in kubernetes
+func healthzHandler(w http.ResponseWriter, r *http.Request) {
+	started := time.Now()
+	duration := time.Since(started)
+	if duration.Seconds() > 10 {
+		w.WriteHeader(500)
+		w.Write([]byte(fmt.Sprintf("error: %v", duration.Seconds())))
+		log.Fatal("health check takes too long: ", duration.String())
+	} else {
+		w.WriteHeader(200)
+		w.Write([]byte("ok"))
+		log.Println("healthz check tooks: ", duration.String())
+	}
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +77,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	files := r.MultipartForm.File["file"]
 
 	for _, fileHeader := range files {
-		if fileHeader.Size > MAX_UPLOAD_SIZE {
+		if fileHeader.Size > maxUploadSize {
 			http.Error(w, fmt.Sprintf("The uploaded image is too big: %s. Please use an image less than 1MB in size", fileHeader.Filename), http.StatusBadRequest)
 			return
 		}
@@ -126,7 +142,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", IndexHandler)
+	mux.HandleFunc("/", webUIHandler)
+	mux.HandleFunc("/healthz", healthzHandler)
 	mux.HandleFunc("/upload", uploadHandler)
 
 	if err := http.ListenAndServe(":4500", mux); err != nil {

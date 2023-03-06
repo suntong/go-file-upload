@@ -79,7 +79,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	for _, fileHeader := range files {
 		if fileHeader.Size > maxUploadSize {
 			http.Error(w, fmt.Sprintf("The uploaded image is too big: %s. Please use an image less than 1MB in size", fileHeader.Filename), http.StatusBadRequest)
-			return
+			continue
 		}
 
 		file, err := fileHeader.Open()
@@ -94,22 +94,17 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		_, err = file.Read(buff)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			log.Fatal("Error reading file: ", fileHeader.Filename, " error is ", err)
+			continue
 		}
 
 		filetype := http.DetectContentType(buff)
 		if filetype != "image/jpeg" && filetype != "image/png" && filetype != "application/pdf" {
 			http.Error(w, "The provided file format is not allowed. Please upload a JPEG, PNG or PDF file", http.StatusBadRequest)
-			return
+			continue
 		}
 
 		_, err = file.Seek(0, io.SeekStart)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = os.MkdirAll("./uploads", os.ModePerm)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -141,12 +136,18 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	err := os.MkdirAll("./uploads", os.ModePerm)
+	if err != nil {
+		log.Fatal("Error ", err)
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", webUIHandler)
 	mux.HandleFunc("/healthz", healthzHandler)
 	mux.HandleFunc("/upload", uploadHandler)
 
-	if err := http.ListenAndServe(":4500", mux); err != nil {
+	if err = http.ListenAndServe(":4500", mux); err != nil {
 		log.Fatal(err)
 	}
 }

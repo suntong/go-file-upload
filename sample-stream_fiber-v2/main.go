@@ -12,8 +12,8 @@ import (
 
 func main() {
 
-	app := fiber.New()
-	app.Server().StreamRequestBody = true
+	app := fiber.New(fiber.Config{
+		DisablePreParseMultipartForm: true, StreamRequestBody: true})
 	app.Use(cors.New())
 
 	app.Post("/upload", func(c *fiber.Ctx) error {

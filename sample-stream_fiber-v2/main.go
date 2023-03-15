@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"mime"
 	"mime/multipart"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -35,7 +37,7 @@ func main() {
 			part, err := reader.NextPart()
 			if err != nil {
 				if err == io.EOF {
-					fmt.Println("EOF")
+					fmt.Println("Done")
 					break
 				} else {
 					fmt.Println("Other type of error", err)
@@ -43,6 +45,26 @@ func main() {
 				}
 			}
 			fmt.Println("FILENAME", part.FormName(), part.FileName(), part.Header.Get("Content-Type"))
+			saving, err := os.Create(part.FileName())
+			if err != nil {
+				fmt.Println("not able to create file", err)
+			}
+			defer saving.Close()
+
+			temp := bufio.NewWriter(saving)
+			buffer := make([]byte, 1024*1024)
+			for {
+				read, err := part.Read(buffer)
+				temp.Write(buffer[:read])
+				if err == io.EOF {
+					//fmt.Println("EOF", err, read)
+					break
+				}
+				if err != nil {
+					fmt.Println("Other type of error while saving", err)
+				}
+			}
+			temp.Flush()
 		}
 		return nil
 	})

@@ -22,7 +22,7 @@ func main() {
 			part, err := reader.NextPart()
 			if err != nil {
 				if err == io.EOF {
-					fmt.Println("EOF")
+					fmt.Println("Done")
 					break
 				} else {
 					fmt.Println("Other type of err", err)
@@ -41,14 +41,14 @@ func main() {
 			buffer := make([]byte, 1024*1024)
 			for {
 				read, err := part.Read(buffer)
+				temp.Write(buffer[:read])
 				if err == io.EOF {
-					fmt.Println("EOF", err)
+					//fmt.Println("EOF", err, read)
 					break
 				}
 				if err != nil {
 					fmt.Println("Other type of error while saving", err)
 				}
-				temp.Write(buffer[:read])
 			}
 			temp.Flush()
 		}
